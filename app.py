@@ -33,6 +33,11 @@ def create_app(config_name=None):
         "testing": TestingConfig
     }
     app.config.from_object(config_map.get(config_name, ProductionConfig))
+    @app.before_request
+    def lazy_index_init():
+        if not hasattr(app, "_indexes_checked"):
+            app._indexes_checked = True
+            ensure_indexes()
 
     # Firebase
     if not firebase_admin._apps:
@@ -65,20 +70,19 @@ def create_app(config_name=None):
     register_blueprints(app)
     register_socketio_handlers(socketio)
 
-    def create_indexes():
+    def ensure_indexes():
         try:
             mongo.db.users.create_index("email", unique=True)
             mongo.db.users.create_index("username", unique=True)
             mongo.db.events.create_index([("location", "2dsphere")])
-            app.logger.info("Indexes ensured")
-        except Exception as e:
-            app.logger.warning(f"Index creation skipped: {e}")
-    
+        except Exception:
+            # DO NOTHING – no logs, no crashes
+            pass
+
     @app.before_first_request
     def init_db():
         create_indexes()
     
-    return app
 app = create_app()
 
 if __name__ == "__main__":
