@@ -1,5 +1,6 @@
 # AWS SDK for Python (used for S3 uploads)
 boto3==1.26.0
+eventlet>=0.24.1
 
 dnspython>=2.6.1
 certifi>=2024.2.2
