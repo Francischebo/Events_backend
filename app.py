@@ -1,14 +1,10 @@
 # app.py
-import ssl
 import os
 import json
-import certifi
-import threading
 from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_socketio import SocketIO
-from pymongo import MongoClient, errors
 import firebase_admin
 from firebase_admin import credentials
 from dotenv import load_dotenv
@@ -19,11 +15,11 @@ from websocket_handlers import register_socketio_handlers
 from config import DevelopmentConfig, ProductionConfig, TestingConfig
 
 load_dotenv()
-MONGODB_URI = os.getenv("MONGODB_URI")
 
 def create_app(config_name=None):
     app = Flask(__name__)
 
+    # ---------------- CONFIG ----------------
     if config_name is None:
         config_name = os.environ.get("FLASK_ENV", "production")
 
@@ -33,30 +29,12 @@ def create_app(config_name=None):
         "testing": TestingConfig
     }
     app.config.from_object(config_map.get(config_name, ProductionConfig))
-    @app.before_request
-    def lazy_index_init():
-        if not hasattr(app, "_indexes_checked"):
-            app._indexes_checked = True
-            ensure_indexes()
 
-    # Firebase
-    if not firebase_admin._apps:
-        key_path = app.config.get("FIREBASE_SERVICE_ACCOUNT_KEY")
-        if key_path:
-            try:
-                if os.path.exists(key_path):
-                    cred = credentials.Certificate(key_path)
-                else:
-                    cred = credentials.Certificate(json.loads(key_path))
-                firebase_admin.initialize_app(cred)
-            except Exception as e:
-                app.logger.error(f"Firebase init failed: {e}")
-
-    # MongoDB
+    # ---------------- MONGODB ----------------
     app.config["MONGO_URI"] = os.getenv("MONGODB_URI")
     mongo.init_app(app)
 
-    # Extensions
+    # ---------------- EXTENSIONS ----------------
     CORS(app)
     jwt.init_app(app)
     bcrypt.init_app(app)
@@ -67,29 +45,49 @@ def create_app(config_name=None):
         async_mode="threading"
     )
 
+    # ---------------- FIREBASE ----------------
+    if not firebase_admin._apps:
+        key_path = app.config.get("FIREBASE_SERVICE_ACCOUNT_KEY")
+        if key_path:
+            try:
+                cred = (
+                    credentials.Certificate(key_path)
+                    if os.path.exists(key_path)
+                    else credentials.Certificate(json.loads(key_path))
+                )
+                firebase_admin.initialize_app(cred)
+            except Exception:
+                pass  # silent in production
+
+    # ---------------- ROUTES ----------------
     register_blueprints(app)
     register_socketio_handlers(socketio)
 
+    # ---------------- SAFE INDEX CREATION ----------------
     def ensure_indexes():
         try:
             mongo.db.users.create_index("email", unique=True)
             mongo.db.users.create_index("username", unique=True)
             mongo.db.events.create_index([("location", "2dsphere")])
         except Exception:
-            # DO NOTHING – no logs, no crashes
-            pass
+            pass  # NEVER crash or log TLS noise
 
-    @app.before_first_request
-    def init_db():
-        create_indexes()
-    
+    @app.before_request
+    def lazy_index_init():
+        if not getattr(app, "_indexes_initialized", False):
+            app._indexes_initialized = True
+            ensure_indexes()
+
+    return app
+
+
 app = create_app()
 
+# ---------------- GUNICORN ENTRY ----------------
 if __name__ == "__main__":
-    app = create_app()
-    bind_host = os.environ.get("BIND_HOST", app.config.get("BIND_HOST", "0.0.0.0"))
-    bind_port = int(os.environ.get("PORT", app.config.get("PORT", 8080)))
-    app.logger.info(f"Starting server on {bind_host}:{bind_port}")
+    bind_host = os.environ.get("BIND_HOST", "0.0.0.0")
+    bind_port = int(os.environ.get("PORT", 8080))
+
     socketio.run(
         app,
         host=bind_host,
