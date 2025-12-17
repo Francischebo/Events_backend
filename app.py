@@ -90,4 +90,11 @@ def create_app(config_name=None):
     return app
 
 # Gunicorn entrypoint
-app = create_app()
+if __name__ == "__main__":
+    app = create_app()
+    bind_host = os.environ.get("BIND_HOST",
+app.config.get("BIND_HOST", "0.0.0.0"))
+    bind_port = int(os.environ.get("PORT", app.config.get("PORT", 5000)))
+    app.logger.info(f"Starting server on {bind_host}:{bind_port}")
+    socketio.run(app, host=bind_host, port=bind_port, 
+debug=app.debug, use_reloader=False)"
