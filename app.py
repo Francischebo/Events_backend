@@ -19,6 +19,7 @@ from websocket_handlers import register_socketio_handlers
 from config import DevelopmentConfig, ProductionConfig, TestingConfig
 
 load_dotenv()
+MONGODB_URI = os.getenv("MONGODB_URI")
 
 def create_app(config_name=None):
     app = Flask(__name__)
