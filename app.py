@@ -52,7 +52,7 @@ def create_app(config_name=None):
     app.config["MONGO_URI"] = mongo_uri
 
     try:
-        client = MongoClient(mongo_uri, serverSelectionTimeoutMS=10000)
+        client = MongoClient(mongo_uri, tls=True, tlsCAFile=certifi.where(), serverSelectionTimeoutMS=50000, connectTimeoutMS=50000)
         client.admin.command("ping")
         app.logger.info("MongoDB connected successfully")
     except errors.ServerSelectionTimeoutError as e:
