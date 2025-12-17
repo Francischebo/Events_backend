@@ -1,6 +1,9 @@
 # AWS SDK for Python (used for S3 uploads)
 boto3==1.26.0
 
+dnspython>=2.6.1
+certifi>=2024.2.2
+
 # Core Flask
 Flask==3.0.0
 Flask-CORS==4.0.0
@@ -9,7 +12,7 @@ python-dotenv==1.0.0
 
 # MongoDB
 Flask-PyMongo==2.3.0
-pymongo==4.6.1
+pymongo==4.6.3
 
 # Auth & Security
 Flask-JWT-Extended==4.6.0
