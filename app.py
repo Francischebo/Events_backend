@@ -48,12 +48,10 @@ def create_app(config_name=None):
 
     # MongoDB
     mongo_uri = os.environ.get("MONGODB_URI")  # Your MongoDB URI]
-    ca = certifi.where()
-    
     client = MongoClient(
         "mongodb+srv://francischeboo404_db_user:Fr%40m0ng00se387623@communityapp.ktglocw.mongodb.net/event_management?retryWrites=true&w=majority",
         tls=True,
-        tlsCAFile=ca,
+        tlsCAFile=certifi.where()
     )
     
     try:
