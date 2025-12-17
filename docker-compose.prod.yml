@@ -1,0 +1,50 @@
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: event_management_mongo_prod
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: event_management
+    volumes:
+      - mongodb_data:/data/db
+
+  backend:
+    build: .
+    container_name: event_management_backend_prod
+    restart: unless-stopped
+    # Tune these via environment variables at runtime
+    environment:
+      FLASK_ENV: production
+      BIND_HOST: 0.0.0.0
+      PORT: 5000
+      # Use the internal Docker network name for Mongo
+      MONGO_URI: 'mongodb://mongodb:27017/event_management'
+      # Gunicorn tuning (override at runtime)
+      WEB_CONCURRENCY: '1'
+      GUNICORN_LOG_LEVEL: 'info'
+      GUNICORN_TIMEOUT: '120'
+    ports:
+      - '5000:5000'
+    depends_on:
+      mongodb:
+        condition: service_started
+    # Use healthcheck as a readiness probe for the backend
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/api/v1/health/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # Logging options to keep logs manageable and readable
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Command override to run Gunicorn with eventlet, tuned by env vars inside the container.
+    # Use $$ to prevent docker-compose from performing variable substitution at compose-time.
+    command: ["sh", "-c", "gunicorn -k eventlet -w $${WEB_CONCURRENCY:-1} --timeout $${GUNICORN_TIMEOUT:-120} --log-level $${GUNICORN_LOG_LEVEL:-info} --access-logfile - --error-logfile - wsgi:application -b 0.0.0.0:5000"]
+
+volumes:
+  mongodb_data:
