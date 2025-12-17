@@ -88,6 +88,7 @@ def create_app(config_name=None):
     threading.Thread(target=ensure_indexes, daemon=True).start()
 
     return app
+app = create_app()
 
 if __name__ == "__main__":
     app = create_app()
