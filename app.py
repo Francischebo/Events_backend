@@ -48,22 +48,8 @@ def create_app(config_name=None):
                 app.logger.error(f"Firebase init failed: {e}")
 
     # MongoDB
-    def create_mongo_client():
-        try:
-            client = MongoClient(
-                MONGODB_URI,
-                tls=True,
-                tlsCAFile=certifi.where(),
-                serverSelectionTimeoutMS=10000
-            )
-            client.admin.command("ping")
-            print("MongoDB connected successfully")
-            return client
-        except Exception as e:
-            print("MongoDB connection failed:", e)
-            return None
-    
-    client = create_mongo_client()
+    app.config["MONGO_URI"] = os.getenv("MONGODB_URI")
+    mongo.init_app(app)
 
     # Extensions
     CORS(app)
@@ -79,16 +65,14 @@ def create_app(config_name=None):
     register_blueprints(app)
     register_socketio_handlers(socketio)
 
-    def ensure_indexes():
+    with app.app_context():
         try:
-            db = mongo.db
-            db.users.create_index("email", unique=True)
-            db.users.create_index("username", unique=True)
-            db.events.create_index([("location", "2dsphere")])
+            mongo.db.users.create_index("email", unique=True)
+            mongo.db.users.create_index("username", unique=True)
+            mongo.db.events.create_index([("location", "2dsphere")])
+            app.logger.info("Indexes created successfully")
         except Exception as e:
             app.logger.error(f"Index creation failed: {e}")
-
-    threading.Thread(target=ensure_indexes, daemon=True).start()
 
     return app
 app = create_app()
