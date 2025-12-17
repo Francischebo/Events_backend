@@ -50,15 +50,20 @@ def create_app(config_name=None):
     mongo_uri = os.environ.get("MONGODB_URI")
     if not mongo_uri:
         raise RuntimeError("MONGODB_URI not set")
-
-    app.config["MONGO_URI"] = mongo_uri
-
+    
     try:
-        client = MongoClient(mongo_uri, tls=True, tlsCAFile=certifi.where(), tlsAllowInvalidCertificates=False, ssl_cert_reqs=ssl.CERT_REQUIRED, serverSelectionTimeoutMS=50000, connectTimeoutMS=50000)
+        client = MongoClient(
+            mongo_uri,
+            tls=True,                        # Enforces TLS/SSL
+            tlsCAFile=certifi.where(),       # Uses trusted CA certificates
+            tlsAllowInvalidCertificates=False,  # True only for testing, False for production
+            serverSelectionTimeoutMS=50000,  # 50s timeout
+            connectTimeoutMS=50000           # 50s connect timeout
+        )
         client.admin.command("ping")
-        app.logger.info("MongoDB connected successfully")
+        print("MongoDB connected successfully ✅")
     except errors.ServerSelectionTimeoutError as e:
-        app.logger.error(f"MongoDB connection failed: {e}")
+        print(f"MongoDB connection failed: {e}")
         raise
 
     mongo.init_app(app)
