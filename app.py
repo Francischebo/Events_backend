@@ -65,15 +65,19 @@ def create_app(config_name=None):
     register_blueprints(app)
     register_socketio_handlers(socketio)
 
-    with app.app_context():
+    def create_indexes():
         try:
             mongo.db.users.create_index("email", unique=True)
             mongo.db.users.create_index("username", unique=True)
             mongo.db.events.create_index([("location", "2dsphere")])
-            app.logger.info("Indexes created successfully")
+            app.logger.info("Indexes ensured")
         except Exception as e:
-            app.logger.error(f"Index creation failed: {e}")
-
+            app.logger.warning(f"Index creation skipped: {e}")
+    
+    @app.before_first_request
+    def init_db():
+        create_indexes()
+    
     return app
 app = create_app()
 
