@@ -47,25 +47,22 @@ def create_app(config_name=None):
                 app.logger.error(f"Firebase init failed: {e}")
 
     # MongoDB
-    mongo_uri = os.environ.get("MONGODB_URI")
-    if not mongo_uri:
-        raise RuntimeError("MONGODB_URI not set")
+    mongo_uri = os.environ.get("MONGODB_URI")  # Your MongoDB URI
+    
+    client = MongoClient(
+        mongo_uri,
+        tls=True,
+        tlsCAFile=certifi.where(),
+        tlsAllowInvalidCertificates=False,
+        serverSelectionTimeoutMS=10000,  # 10s for quick failover
+    )
     
     try:
-        client = MongoClient(
-            mongo_uri,
-            tls=True,                        # Enforces TLS/SSL
-            tlsCAFile=certifi.where(),       # Uses trusted CA certificates
-            tlsAllowInvalidCertificates=False,  # True only for testing, False for production
-            serverSelectionTimeoutMS=50000,  # 50s timeout
-            connectTimeoutMS=50000           # 50s connect timeout
-        )
         client.admin.command("ping")
         print("MongoDB connected successfully ✅")
     except errors.ServerSelectionTimeoutError as e:
         print(f"MongoDB connection failed: {e}")
         raise
-
     mongo.init_app(app)
 
     # Extensions
