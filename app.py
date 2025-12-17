@@ -47,14 +47,13 @@ def create_app(config_name=None):
                 app.logger.error(f"Firebase init failed: {e}")
 
     # MongoDB
-    mongo_uri = os.environ.get("MONGODB_URI")  # Your MongoDB URI
+    mongo_uri = os.environ.get("MONGODB_URI")  # Your MongoDB URI]
+    ca = certifi.where()
     
     client = MongoClient(
-        mongo_uri,
+        "mongodb+srv://francischeboo404_db_user:Fr%40m0ng00se387623@communityapp.ktglocw.mongodb.net/event_management?retryWrites=true&w=majority",
         tls=True,
-        tlsCAFile=certifi.where(),
-        tlsAllowInvalidCertificates=False,
-        serverSelectionTimeoutMS=10000,  # 10s for quick failover
+        tlsCAFile=ca,
     )
     
     try:
