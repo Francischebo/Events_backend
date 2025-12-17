@@ -47,20 +47,22 @@ def create_app(config_name=None):
                 app.logger.error(f"Firebase init failed: {e}")
 
     # MongoDB
-    mongo_uri = os.environ.get("MONGODB_URI")  # Your MongoDB URI]
-    client = MongoClient(
-        "mongodb+srv://francischeboo404_db_user:Fr%40m0ng00se387623@communityapp.ktglocw.mongodb.net/event_management?retryWrites=true&w=majority",
-        tls=True,
-        tlsCAFile=certifi.where()
-    )
+    def create_mongo_client():
+        try:
+            client = MongoClient(
+                MONGODB_URI,
+                tls=True,
+                tlsCAFile=certifi.where(),
+                serverSelectionTimeoutMS=10000
+            )
+            client.admin.command("ping")
+            print("MongoDB connected successfully")
+            return client
+        except Exception as e:
+            print("MongoDB connection failed:", e)
+            return None
     
-    try:
-        client.admin.command("ping")
-        print("MongoDB connected successfully ✅")
-    except errors.ServerSelectionTimeoutError as e:
-        print(f"MongoDB connection failed: {e}")
-        raise
-    mongo.init_app(app)
+    client = create_mongo_client()
 
     # Extensions
     CORS(app)
