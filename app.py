@@ -59,7 +59,7 @@ def create_app(config_name=None):
 
     app.config["MONGO_URI"] = mongo_uri
     try:
-        client = MongoClient(mongo_uri, tls=True, tlsCAFile=certifi.where(), serverSelectionTimeoutMS=10000)
+        client = MongoClient(mongo_uri, serverSelectionTimeoutMS=10000)
         # Test connection
         client.admin.command('ping')
         app.logger.info("MongoDB connection successful.")
