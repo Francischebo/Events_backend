@@ -1,6 +1,7 @@
 # app.py
 import os
 import json
+import certifi
 import threading
 from flask import Flask
 from flask_cors import CORS
