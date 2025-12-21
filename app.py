@@ -60,6 +60,15 @@ def create_app(config_name=None):
                 pass  # silent in production
 
     # ---------------- ROUTES ----------------
+    # --- Extensions ---
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    jwt.init_app(app)
+    bcrypt.init_app(app)
+
+    # --- Socket.IO ---
+    timeout_ms = int(app.config.get("REQUEST_TIMEOUT_MS", 1000000))
+    socketio.init_app(app, cors_allowed_origins="*", ping_timeout=max(1, timeout_ms / 1000.0), async_mode='threading')
+
     register_blueprints(app)
     register_socketio_handlers(socketio)
 
